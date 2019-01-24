@@ -1,0 +1,9 @@
+
+- import_role:
+    name: oracle-homes-backup
+  vars:
+    oracle_homes_backup_ora_home: '{{ _oracle_homes_backup_host_home_nested_item[1].oracle_home }}'
+  delegate_to: '{{ _oracle_homes_backup_host_home_nested_item[0] }}'
+  tags:
+    - oracle-homes-backup
+

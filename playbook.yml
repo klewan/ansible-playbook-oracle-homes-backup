@@ -1,0 +1,48 @@
+---
+- name: Backup ORACLE_HOMEs
+  hosts: ora-servers
+  gather_facts: true
+  become: true
+  become_user: '{{ oracle_user }}'
+
+  vars:
+    _oracle_homes_backup_rac_support: true
+
+  tasks:
+
+  - import_role:
+      name: oracle-gatherinfo-gi
+    tags:
+      - oracle-gatherinfo-gi
+
+  - import_role:
+      name: oracle-gatherinfo-databases
+    tags:
+      - oracle-gatherinfo-databases
+
+  - include_role:
+      name: oracle-homes-backup
+    vars:
+      oracle_homes_backup_ora_home: '{{ _oracle_homes_backup_outer_item.oracle_home }}'
+    with_items:
+      - "{{ oracle_databases + [ oracle_gi_info ] }}"
+    loop_control:
+      label: "[ORACLE_HOME: {{ _oracle_homes_backup_outer_item.oracle_home }}]"
+      loop_var: _oracle_homes_backup_outer_item
+#    when: not _oracle_homes_backup_rac_support
+    when: not _oracle_homes_backup_rac_support and _oracle_homes_backup_outer_item.software_version == '11.2.0.4.0'
+    tags:
+      - oracle-homes-backup
+
+  - include_tasks: import_oracle-homes-backup_with_delegate.yml
+    with_nested:
+      - "{{ oracle_gi_info.rac_remote_nodes + [ inventory_hostname ] }}"
+      - "{{ oracle_databases + [ oracle_gi_info ] }}"
+    loop_control:
+      label: "[host: {{ _oracle_homes_backup_host_home_nested_item[0] }}; oracle home: {{ _oracle_homes_backup_host_home_nested_item[1].oracle_home }}]"
+      loop_var: _oracle_homes_backup_host_home_nested_item
+#    when: _oracle_homes_backup_rac_support
+    when: _oracle_homes_backup_rac_support and _oracle_homes_backup_host_home_nested_item[1].software_version == '11.2.0.4.0'
+    tags:
+      - oracle-homes-backup
+
